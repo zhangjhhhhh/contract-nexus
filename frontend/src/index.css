@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #1F2937;
+  background: #FFFFFF;
+  font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  background: #FFFFFF;
+  color: #1F2937;
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+textarea {
+  resize: vertical;
+}
+
+::placeholder {
+  color: #9CA3AF;
+}
+
+:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid #E5E7EB;
+  padding: 0 16px;
+  height: 56px;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+th {
+  background: #F7F8FA;
+  color: #6B7280;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+td {
+  color: #1F2937;
+  font-size: 17px;
+}
+
+tbody tr:hover {
+  background: #F0F4F9;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+.page-scroll {
+  scrollbar-color: #9CA3AF #F7F8FA;
+}
+
+.page-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.page-scroll::-webkit-scrollbar-thumb {
+  background: #9CA3AF;
+  border-radius: 8px;
+}
+
+.page-scroll::-webkit-scrollbar-track {
+  background: #F7F8FA;
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}

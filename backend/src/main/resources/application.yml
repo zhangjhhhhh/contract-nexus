@@ -1,0 +1,51 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: contract-management-backend
+  profiles:
+    active: db
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:your_mail_account}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: ${MAIL_SSL_ENABLE:true}
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLE:false}
+
+bailian:
+  endpoint: ${BAILIAN_ENDPOINT:https://dashscope.aliyuncs.com/api/v1/apps}
+  app-id: ${BAILIAN_APP_ID:${APP_ID:}}
+  review-app-id: ${BAILIAN_REVIEW_APP_ID:${BAILIAN_APP_ID:${APP_ID:}}}
+  legal-chat-app-id: 84a6acc6f6134090b9b21e488c3792f1
+  api-key: ${DASHSCOPE_API_KEY:${BAILIAN_API_KEY:${API_KEY:}}}
+
+ai:
+  review:
+    enabled: ${AI_REVIEW_ENABLED:true}
+    timeout-seconds: ${AI_REVIEW_TIMEOUT_SECONDS:60}
+    max-text-chars: ${AI_REVIEW_MAX_TEXT_CHARS:120000}
+  legal-chat:
+    timeout-seconds: ${AI_LEGAL_CHAT_TIMEOUT_SECONDS:45}
+
+logging:
+  charset:
+    console: ${LOGGING_CHARSET_CONSOLE:GBK}
+
+sihai:
+  mail:
+    from: ${MAIL_FROM:your_mail_account}
+    from-name: ${MAIL_FROM_NAME:四海合同管理系统}
+    verification-code-ttl-minutes: ${MAIL_CODE_TTL_MINUTES:10}
+    task-reminder-enabled: ${TASK_REMINDER_EMAIL_ENABLED:true}
