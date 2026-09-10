@@ -2,6 +2,7 @@ package com.example.contract.contract.service;
 
 import com.example.contract.contract.dto.ApproveContractRequest;
 import com.example.contract.contract.dto.AssignContractRequest;
+import com.example.contract.contract.dto.AiReviewDiagnostics;
 import com.example.contract.contract.dto.CountersignRequest;
 import com.example.contract.contract.dto.DraftContractRequest;
 import com.example.contract.contract.dto.FinalizeContractRequest;
@@ -20,6 +21,10 @@ public interface ContractService {
     PageResponse<Contract> list(String keyword, String status, LocalDate beginDate, LocalDate endDate, int page, int pageSize);
 
     Contract detail(String id);
+
+    AiReviewDiagnostics aiReviewDiagnostics(String id);
+
+    Contract retryAiReview(String id);
 
     Contract draft(DraftContractRequest request);
 

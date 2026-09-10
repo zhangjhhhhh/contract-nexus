@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.contract.auth.repository.InMemoryUserRepository;
+import com.example.contract.auth.security.TokenService;
 import com.example.contract.auth.service.AuthService;
 import com.example.contract.log.service.LogService;
 import com.example.contract.notification.MailClient;
@@ -13,6 +14,7 @@ import com.example.contract.notification.RegisterVerificationCodeService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -25,7 +27,9 @@ class AuthControllerTest {
         AuthService authService = new AuthService(
                 userRepository,
                 new NoopLogService(),
-                new RegisterVerificationCodeService(new NoopMailClient(), new MailProperties()));
+                new RegisterVerificationCodeService(new NoopMailClient(), new MailProperties()),
+                new TokenService(),
+                new BCryptPasswordEncoder());
         MockMvc mockMvc = MockMvcBuilders
                 .standaloneSetup(new AuthController(authService))
                 .build();

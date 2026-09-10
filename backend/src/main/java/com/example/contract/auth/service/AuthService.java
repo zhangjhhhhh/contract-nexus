@@ -11,11 +11,13 @@ import com.example.contract.auth.dto.UserRequest;
 import com.example.contract.auth.model.Role;
 import com.example.contract.auth.model.User;
 import com.example.contract.auth.repository.UserRepository;
+import com.example.contract.auth.security.TokenService;
 import com.example.contract.common.BusinessException;
 import com.example.contract.log.service.LogService;
 import com.example.contract.notification.RegisterVerificationCodeService;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,24 +28,62 @@ public class AuthService {
     private final UserRepository userRepository;
     private final LogService logService;
     private final RegisterVerificationCodeService verificationCodeService;
+    private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthService(UserRepository userRepository,
                        LogService logService,
-                       RegisterVerificationCodeService verificationCodeService) {
+                       RegisterVerificationCodeService verificationCodeService,
+                       TokenService tokenService,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.logService = logService;
         this.verificationCodeService = verificationCodeService;
+        this.tokenService = tokenService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findUserByUsername(request.getName())
                 .orElseThrow(() -> new BusinessException("用户名或密码不正确"));
-        if (!user.getPassword().equals(request.getPassword())) {
+        if (!passwordMatches(user, request.getPassword())) {
             throw new BusinessException("用户名或密码不正确");
         }
+        upgradePasswordIfNeeded(user, request.getPassword());
         List<String> permissions = userRepository.findPermissionsByUserId(user.getId());
+        String token = tokenService.issue(user.getUsername());
         logService.record(user.getUsername(), "登录系统");
-        return new AuthResponse(UserDto.from(user), permissions, landingPathFor(user));
+        return new AuthResponse(UserDto.from(user), permissions, landingPathFor(user), token);
+    }
+
+    public void logout(String token) {
+        tokenService.revoke(token);
+    }
+
+    private boolean passwordMatches(User user, String rawPassword) {
+        String stored = user.getPassword();
+        if (stored == null) {
+            return false;
+        }
+        if (isBcrypt(stored)) {
+            return passwordEncoder.matches(rawPassword, stored);
+        }
+        return stored.equals(rawPassword);
+    }
+
+    private void upgradePasswordIfNeeded(User user, String rawPassword) {
+        String stored = user.getPassword();
+        if (stored == null || isBcrypt(stored)) {
+            return;
+        }
+        if (stored.equals(rawPassword)) {
+            user.setPassword(passwordEncoder.encode(rawPassword));
+            userRepository.saveUser(user);
+        }
+    }
+
+    private boolean isBcrypt(String value) {
+        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
     }
 
     public UserDto register(RegisterRequest request) {
@@ -56,7 +96,7 @@ public class AuthService {
         User user = new User();
         user.setId(userRepository.nextUserId());
         user.setUsername(request.getName());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(normalizeEmail(request.getEmail()));
         user.setCreatedAt(LocalDateTime.now());
         user.setRoleIds(List.of(DEFAULT_REGISTER_ROLE));
@@ -82,7 +122,7 @@ public class AuthService {
         User user = new User();
         user.setId(userRepository.nextUserId());
         user.setUsername(request.getName());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(normalizeEmail(request.getEmail()));
         user.setCreatedAt(LocalDateTime.now());
         user.setRoleIds(request.getRoleIds());
@@ -96,7 +136,7 @@ public class AuthService {
                 .orElseThrow(() -> new BusinessException(404, "用户不存在"));
         validateRoles(request.getRoleIds());
         user.setUsername(request.getName());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(normalizeEmail(request.getEmail()));
         user.setRoleIds(request.getRoleIds());
         User saved = userRepository.saveUser(user);

@@ -1,5 +1,6 @@
 package com.example.contract.common;
 
+import com.example.contract.auth.security.PublicApi;
 import java.sql.DriverManager;
 import java.util.Map;
 import org.springframework.context.annotation.Profile;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("db")
+@PublicApi
 @RestController
 @RequestMapping("/api/db")
 public class DatabaseHealthController {

@@ -1,5 +1,6 @@
 package com.example.contract.common;
 
+import com.example.contract.auth.security.RequirePermission;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@RequirePermission("contract:draft")
 @RestController
 @RequestMapping("/api/files")
 public class ChunkController {

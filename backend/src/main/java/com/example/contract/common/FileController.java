@@ -1,5 +1,7 @@
 package com.example.contract.common;
 
+import com.example.contract.auth.security.PublicApi;
+import com.example.contract.auth.security.RequirePermission;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,17 +44,20 @@ public class FileController {
         this.fileStorageService = fileStorageService;
     }
 
+    @RequirePermission("contract:draft")
     @PostMapping
     public ApiResponse<AttachmentInfo> upload(@RequestParam("file") MultipartFile file) {
         return ApiResponse.success(toAttachmentInfo(fileStorageService.store(file)));
     }
 
+    @PublicApi
     @GetMapping("/{storedName}")
     public ResponseEntity<Resource> download(@PathVariable String storedName,
                                              @RequestParam(value = "name", required = false) String displayName) {
         return buildFileResponse(storedName, displayName, false);
     }
 
+    @PublicApi
     @GetMapping("/preview/{storedName}")
     public ResponseEntity<?> preview(@PathVariable String storedName,
                                      @RequestParam(value = "name", required = false) String displayName) {

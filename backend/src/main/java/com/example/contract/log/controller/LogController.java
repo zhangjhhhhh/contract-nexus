@@ -1,5 +1,6 @@
 package com.example.contract.log.controller;
 
+import com.example.contract.auth.security.RequirePermission;
 import com.example.contract.common.ApiResponse;
 import com.example.contract.log.model.OperationLog;
 import com.example.contract.log.service.LogService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequirePermission("system:log")
 @RestController
 @RequestMapping("/api/logs")
 public class LogController {

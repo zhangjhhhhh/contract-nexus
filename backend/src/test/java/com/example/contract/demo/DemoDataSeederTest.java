@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 class DemoDataSeederTest {
 
     private static final String DEFAULT_DB_URL =
-            "jdbc:mysql://rm-2zekv7snw92jp09z5uo.mysql.rds.aliyuncs.com:3306/contract_system"
+            "jdbc:mysql://localhost:3306/contract_system"
                     + "?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true";
     private static final Pattern CONTRACT_LINE = Pattern.compile(
             "^(MNHT-\\d{4}-\\d{3})\\s*\\|\\s*([^|]+)\\s*\\|\\s*([^|]+)\\s*\\|\\s*([^|]+)\\s*\\|\\s*(.+)$");

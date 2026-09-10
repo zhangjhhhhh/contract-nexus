@@ -4,6 +4,7 @@ import com.example.contract.common.BusinessException;
 import com.example.contract.contract.dto.ApproveContractRequest;
 import com.example.contract.contract.dto.AssignContractRequest;
 import com.example.contract.contract.dto.AttachmentRequest;
+import com.example.contract.contract.dto.AiReviewDiagnostics;
 import com.example.contract.contract.dto.CountersignRequest;
 import com.example.contract.contract.dto.DraftContractRequest;
 import com.example.contract.contract.dto.FinalizeContractRequest;
@@ -20,6 +21,7 @@ import com.example.contract.contract.model.ProcessType;
 import com.example.contract.contract.model.SignRecord;
 import com.example.contract.contract.repository.ContractRepository;
 import com.example.contract.log.service.LogService;
+import jakarta.annotation.PreDestroy;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,6 +30,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -42,6 +48,7 @@ public class ContractServiceImpl implements ContractService {
     private final ContractRepository repository;
     private final LogService logService;
     private final BailianContractReviewService bailianContractReviewService;
+    private final ExecutorService aiReviewExecutor;
 
     public ContractServiceImpl(ContractRepository repository,
                                LogService logService,
@@ -49,6 +56,7 @@ public class ContractServiceImpl implements ContractService {
         this.repository = repository;
         this.logService = logService;
         this.bailianContractReviewService = bailianContractReviewService;
+        this.aiReviewExecutor = Executors.newSingleThreadExecutor(new AiReviewThreadFactory());
     }
 
     @Override
@@ -76,6 +84,49 @@ public class ContractServiceImpl implements ContractService {
     @Override
     public Contract detail(String id) {
         return findContract(id);
+    }
+
+    @Override
+    public AiReviewDiagnostics aiReviewDiagnostics(String id) {
+        Contract contract = findContract(id);
+        BailianContractReviewService.ConfigurationStatus config = bailianContractReviewService.configurationStatus();
+        List<Attachment> attachments = contract.getAttachments() == null ? List.of() : contract.getAttachments();
+        int reviewableAttachmentCount = (int) attachments.stream()
+                .map(Attachment::getType)
+                .filter(type -> type != null)
+                .map(type -> type.toLowerCase(Locale.ROOT))
+                .filter(REVIEW_ATTACHMENT_TYPES::contains)
+                .count();
+        List<ContractTextExtractionService.AttachmentText> extractedTexts =
+                bailianContractReviewService.extractTextsForDiagnostics(contract);
+        int extractedTextLength = extractedTexts.stream()
+                .map(ContractTextExtractionService.AttachmentText::text)
+                .filter(text -> text != null)
+                .mapToInt(String::length)
+                .sum();
+        return new AiReviewDiagnostics(
+                config.enabled(),
+                config.endpointConfigured(),
+                config.reviewAppIdConfigured(),
+                config.apiKeyConfigured(),
+                config.endpoint(),
+                contract.getAiReview() != null && !contract.getAiReview().isBlank(),
+                attachments.size(),
+                reviewableAttachmentCount,
+                extractedTexts.size(),
+                extractedTextLength);
+    }
+
+    @Override
+    public Contract retryAiReview(String id) {
+        Contract contract = findContract(id);
+        String reviewJson = bailianContractReviewService.review(contract)
+                .orElseThrow(() -> new BusinessException("AI审查未生成，请检查审查智能体配置、附件文字提取和后端日志"));
+        Contract latest = repository.findContractById(contract.getId()).orElse(contract);
+        latest.setAiReview(reviewJson);
+        Contract saved = repository.saveContract(latest);
+        logService.record(latest.getDrafterId(), "重新生成AI审查：" + latest.getName());
+        return saved;
     }
 
     @Override
@@ -376,11 +427,24 @@ public class ContractServiceImpl implements ContractService {
                         contract.getId(), contract.getNum(), exception.toString(), exception);
             }
             LOG.info("[AI审查] 异步审查任务结束：contractId={}，contractNum={}", contract.getId(), contract.getNum());
-        }).exceptionally(exception -> {
+        }, aiReviewExecutor).exceptionally(exception -> {
             LOG.error("[AI审查] 异步审查任务提交后异常：contractId={}，contractNum={}，reason={}",
                     contract.getId(), contract.getNum(), exception.toString(), exception);
             return null;
         });
+    }
+
+    @PreDestroy
+    void shutdownAiReviewExecutor() {
+        aiReviewExecutor.shutdown();
+        try {
+            if (!aiReviewExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                aiReviewExecutor.shutdownNow();
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            aiReviewExecutor.shutdownNow();
+        }
     }
 
     private List<Attachment> toAttachments(List<AttachmentRequest> requests) {
@@ -408,6 +472,15 @@ public class ContractServiceImpl implements ContractService {
                     .toList()
                     .toString();
             throw new BusinessException("请上传可审查的合同文件，支持格式：" + supported);
+        }
+    }
+
+    private static class AiReviewThreadFactory implements ThreadFactory {
+        @Override
+        public Thread newThread(Runnable runnable) {
+            Thread thread = new Thread(runnable, "ai-review-worker");
+            thread.setDaemon(false);
+            return thread;
         }
     }
 }

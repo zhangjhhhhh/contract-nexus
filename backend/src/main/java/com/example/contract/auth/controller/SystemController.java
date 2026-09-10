@@ -1,5 +1,6 @@
 package com.example.contract.auth.controller;
 
+import com.example.contract.auth.security.RequirePermission;
 import com.example.contract.auth.dto.RoleDto;
 import com.example.contract.auth.dto.RoleRequest;
 import com.example.contract.auth.dto.UserDto;
@@ -28,47 +29,56 @@ public class SystemController {
         this.authService = authService;
     }
 
+    @RequirePermission("system:user")
     @GetMapping("/users")
     public ApiResponse<List<UserDto>> users() {
         return ApiResponse.success(authService.listUsers());
     }
 
+    @RequirePermission("system:user")
     @PostMapping("/users")
     public ApiResponse<UserDto> createUser(@Valid @RequestBody UserRequest request) {
         return ApiResponse.success(authService.createUser(request));
     }
 
+    @RequirePermission("system:user")
     @PutMapping("/users/{id}")
     public ApiResponse<UserDto> updateUser(@PathVariable String id, @Valid @RequestBody UserRequest request) {
         return ApiResponse.success(authService.updateUser(id, request));
     }
 
+    @RequirePermission("system:user")
     @DeleteMapping("/users/{id}")
     public ApiResponse<Void> deleteUser(@PathVariable String id) {
         authService.deleteUser(id);
         return ApiResponse.success();
     }
 
+    @RequirePermission("system:permission")
     @PutMapping("/users/{id}/roles")
     public ApiResponse<UserDto> setUserRoles(@PathVariable String id, @Valid @RequestBody UserRolesRequest request) {
         return ApiResponse.success(authService.setUserRoles(id, request.getRoleIds()));
     }
 
+    @RequirePermission("system:role")
     @GetMapping("/roles")
     public ApiResponse<List<RoleDto>> roles() {
         return ApiResponse.success(authService.listRoles());
     }
 
+    @RequirePermission("system:role")
     @PostMapping("/roles")
     public ApiResponse<RoleDto> createRole(@Valid @RequestBody RoleRequest request) {
         return ApiResponse.success(authService.createRole(request));
     }
 
+    @RequirePermission("system:role")
     @PutMapping("/roles/{id}")
     public ApiResponse<RoleDto> updateRole(@PathVariable String id, @Valid @RequestBody RoleRequest request) {
         return ApiResponse.success(authService.updateRole(id, request));
     }
 
+    @RequirePermission("system:role")
     @DeleteMapping("/roles/{id}")
     public ApiResponse<Void> deleteRole(@PathVariable String id) {
         authService.deleteRole(id);

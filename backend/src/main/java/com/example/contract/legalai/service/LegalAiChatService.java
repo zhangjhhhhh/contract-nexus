@@ -33,7 +33,6 @@ public class LegalAiChatService {
 
     private static final Logger LOG = LoggerFactory.getLogger(LegalAiChatService.class);
     private static final int MAX_HISTORY_MESSAGES = 12;
-    private static final String FIXED_LEGAL_CHAT_APP_ID = "84a6acc6f6134090b9b21e488c3792f1";
     private static final Set<String> ALL_CONTRACT_PERMISSIONS = Set.of("query:info", "base:contract");
 
     private final ObjectMapper objectMapper;
@@ -54,6 +53,7 @@ public class LegalAiChatService {
             ContractTextExtractionService textExtractionService,
             @Value("${bailian.endpoint}") String endpoint,
             @Value("${bailian.api-key:}") String apiKey,
+            @Value("${bailian.legal-chat-app-id:}") String appId,
             @Value("${ai.legal-chat.timeout-seconds:45}") long timeoutSeconds) {
         this(objectMapper,
                 HttpClient.newBuilder()
@@ -61,7 +61,7 @@ public class LegalAiChatService {
                         .build(),
                 endpoint,
                 apiKey,
-                FIXED_LEGAL_CHAT_APP_ID,
+                appId,
                 Duration.ofSeconds(Math.max(5, timeoutSeconds)),
                 contractRepository,
                 userRepository,

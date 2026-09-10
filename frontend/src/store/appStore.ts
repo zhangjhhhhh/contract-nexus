@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 import * as authApi from "../api/auth";
 import * as contractApi from "../api/contracts";
 import * as systemApi from "../api/system";
+import { clearToken } from "../api/http";
 import {
   initialContracts,
   initialCustomers,
@@ -146,6 +147,7 @@ export const useAppStore = create<AppState>()(
       },
       logout: () => {
         get().addLog("注销登录");
+        clearToken();
         set({ session: null, permissions: [], contractsLoaded: false });
       },
       clearAll: () => {

@@ -7,6 +7,7 @@ import com.example.contract.auth.dto.RegisterRequest;
 import com.example.contract.auth.model.Role;
 import com.example.contract.auth.model.User;
 import com.example.contract.auth.repository.InMemoryUserRepository;
+import com.example.contract.auth.security.TokenService;
 import com.example.contract.log.service.LogService;
 import com.example.contract.notification.MailClient;
 import com.example.contract.notification.MailProperties;
@@ -15,6 +16,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 class AuthServiceTest {
 
@@ -36,7 +38,9 @@ class AuthServiceTest {
         AuthService authService = new AuthService(
                 userRepository,
                 new NoopLogService(),
-                new RegisterVerificationCodeService(new NoopMailClient(), new MailProperties()));
+                new RegisterVerificationCodeService(new NoopMailClient(), new MailProperties()),
+                new TokenService(),
+                new BCryptPasswordEncoder());
 
         authService.register(registerRequest("李四"));
 

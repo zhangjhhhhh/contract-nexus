@@ -277,7 +277,7 @@ public class MysqlUserRepository implements UserRepository {
 
     private String saveUserRow(Connection connection, User user) throws SQLException {
         String id = blankToNull(user.getId());
-        String password = requirePasswordForLegacySchema(user.getPassword());
+        String password = user.getPassword();
         String email = blankToNull(user.getEmail()) == null ? DEFAULT_USER_EMAIL : user.getEmail();
         if (id != null && userExists(connection, id)) {
             try (PreparedStatement statement = connection.prepareStatement(
@@ -593,13 +593,6 @@ public class MysqlUserRepository implements UserRepository {
 
     private boolean isDuplicateColumn(SQLException exception) {
         return exception.getErrorCode() == 1060;
-    }
-
-    private String requirePasswordForLegacySchema(String password) {
-        if (password != null && password.length() > 20) {
-            throw new IllegalArgumentException("Legacy `user.password` supports at most 20 characters. Expand the column before storing encrypted passwords.");
-        }
-        return password;
     }
 
     private String normalizeId(String id) {

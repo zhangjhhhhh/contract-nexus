@@ -28,13 +28,13 @@ bailian:
   endpoint: ${BAILIAN_ENDPOINT:https://dashscope.aliyuncs.com/api/v1/apps}
   app-id: ${BAILIAN_APP_ID:${APP_ID:}}
   review-app-id: ${BAILIAN_REVIEW_APP_ID:${BAILIAN_APP_ID:${APP_ID:}}}
-  legal-chat-app-id: 84a6acc6f6134090b9b21e488c3792f1
+  legal-chat-app-id: ${BAILIAN_LEGAL_CHAT_APP_ID:}
   api-key: ${DASHSCOPE_API_KEY:${BAILIAN_API_KEY:${API_KEY:}}}
 
 ai:
   review:
     enabled: ${AI_REVIEW_ENABLED:true}
-    timeout-seconds: ${AI_REVIEW_TIMEOUT_SECONDS:60}
+    timeout-seconds: ${AI_REVIEW_TIMEOUT_SECONDS:120}
     max-text-chars: ${AI_REVIEW_MAX_TEXT_CHARS:120000}
   legal-chat:
     timeout-seconds: ${AI_LEGAL_CHAT_TIMEOUT_SECONDS:45}

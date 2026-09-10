@@ -1,17 +1,24 @@
 import type { PermissionKey, User } from "../types";
-import { request } from "./http";
+import { request, setToken } from "./http";
 
 export type AuthResponse = {
   user: User;
   permissions: PermissionKey[];
   redirectTo: string;
+  token: string;
 };
 
-export function login(payload: { name: string; password: string }) {
-  return request<AuthResponse>("/auth/login", {
+export async function login(payload: { name: string; password: string }) {
+  const result = await request<AuthResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(payload)
   });
+  setToken(result.token);
+  return result;
+}
+
+export function logout() {
+  return request<void>("/auth/logout", { method: "POST" });
 }
 
 export function sendRegisterCode(payload: { email: string }) {

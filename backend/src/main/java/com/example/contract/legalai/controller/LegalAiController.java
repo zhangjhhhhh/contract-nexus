@@ -1,5 +1,6 @@
 package com.example.contract.legalai.controller;
 
+import com.example.contract.auth.security.RequirePermission;
 import com.example.contract.common.ApiResponse;
 import com.example.contract.legalai.dto.LegalAiChatRequest;
 import com.example.contract.legalai.dto.LegalAiChatResponse;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequirePermission("query:info")
 @RestController
 @RequestMapping("/api/legal-ai")
 public class LegalAiController {

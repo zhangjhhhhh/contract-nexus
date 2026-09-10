@@ -1,6 +1,6 @@
-import { Bot, Download } from "lucide-react";
+import { Bot, Download, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { fetchContract, fetchContractVersions } from "../api/contracts";
+import { fetchContract, fetchContractVersions, retryAiReview } from "../api/contracts";
 import { getDownloadUrl, getPreviewUrl } from "../api/files";
 import type { AiReview, Attachment, Contract, ContractVersion, Customer, User } from "../types";
 import { formatDate, formatDateTime } from "../utils/format";
@@ -12,6 +12,8 @@ export function ContractDetail({ contract, customers, users }: { contract: Contr
   const drafter = users.find((item) => item.id === currentContract.drafterId);
   const attachments = currentContract.attachments ?? [];
   const [versions, setVersions] = useState<ContractVersion[]>([]);
+  const [reviewing, setReviewing] = useState(false);
+  const [reviewError, setReviewError] = useState("");
   const aiReview = useMemo(() => parseAiReview(currentContract.aiReview), [currentContract.aiReview]);
 
   useEffect(() => {
@@ -80,6 +82,19 @@ export function ContractDetail({ contract, customers, users }: { contract: Contr
     ["合同周期", `${formatDate(currentContract.beginTime)} 至 ${formatDate(currentContract.endTime)}`]
   ];
 
+  async function handleRetryAiReview() {
+    setReviewing(true);
+    setReviewError("");
+    try {
+      const item = await retryAiReview(currentContract.id);
+      setCurrentContract(item);
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "AI审查生成失败");
+    } finally {
+      setReviewing(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid gap-3 md:grid-cols-2">
@@ -98,7 +113,13 @@ export function ContractDetail({ contract, customers, users }: { contract: Contr
         <div className="text-note text-muted">合同内容</div>
         <p className="m-0 mt-2 whitespace-pre-wrap text-body text-text">{currentContract.content}</p>
       </div>
-      <AiReviewPanel review={aiReview.review} raw={aiReview.raw} />
+      <AiReviewPanel
+        review={aiReview.review}
+        raw={aiReview.raw}
+        reviewing={reviewing}
+        error={reviewError}
+        onRetry={handleRetryAiReview}
+      />
       {attachments.length > 0 ? (
         <div className="rounded-card border border-line bg-white px-4 py-3">
           <div className="text-note text-muted">合同附件</div>
@@ -212,7 +233,19 @@ function isPreviewableAttachment(file: Attachment) {
     || path.endsWith(".pdf") || path.endsWith(".docx");
 }
 
-function AiReviewPanel({ review, raw }: { review?: AiReview; raw?: string }) {
+function AiReviewPanel({
+  review,
+  raw,
+  reviewing,
+  error,
+  onRetry
+}: {
+  review?: AiReview;
+  raw?: string;
+  reviewing: boolean;
+  error: string;
+  onRetry: () => void;
+}) {
   const riskAlerts = review?.risk_alerts ?? [];
   const overallLevel = review?.overall_assessment?.overall_risk_level || "无";
   const missingClauses = review?.overall_assessment?.missing_clauses ?? [];
@@ -226,7 +259,20 @@ function AiReviewPanel({ review, raw }: { review?: AiReview; raw?: string }) {
           </span>
           AI审查：
         </div>
-        <span className={levelClass(overallLevel)}>{overallLevel === "无" ? "未生成" : `整体风险：${overallLevel}`}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={levelClass(overallLevel)}>{overallLevel === "无" ? "未生成" : `整体风险：${overallLevel}`}</span>
+          {!review ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={reviewing}
+              className="inline-flex items-center gap-2 rounded-button bg-primary px-3 py-2 text-body font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${reviewing ? "animate-spin" : ""}`} />
+              {reviewing ? "生成中" : "重新生成"}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {review ? (
@@ -279,8 +325,10 @@ function AiReviewPanel({ review, raw }: { review?: AiReview; raw?: string }) {
         <div className="mt-3 rounded-card border border-line bg-section px-3 py-2 text-body text-muted">
           {raw ? (
             <pre className="m-0 max-h-64 overflow-auto whitespace-pre-wrap break-words text-note">{raw}</pre>
+          ) : error ? (
+            error
           ) : (
-            "暂未生成审查结果。请确认后端已配置百炼应用后重新起草合同。"
+            "暂未生成审查结果。请确认后端已配置百炼应用后重新生成。"
           )}
         </div>
       )}

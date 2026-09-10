@@ -7,11 +7,14 @@ import com.example.contract.contract.model.Contract;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
@@ -62,7 +65,7 @@ public class ContractTextExtractionService {
                 texts.add(new AttachmentText(attachment.getName(), type, normalized));
                 LOG.info("[AI审查] 附件文字提取完成：name={}，type={}，textLength={}",
                         attachment.getName(), type, normalized.length());
-            } catch (IOException | RuntimeException exception) {
+            } catch (IOException | RuntimeException | LinkageError exception) {
                 LOG.error("[AI审查] 附件文字提取失败：name={}，type={}，path={}，reason={}",
                         attachment.getName(), attachment.getType(), attachment.getPath(), exception.toString(), exception);
             }
@@ -80,11 +83,41 @@ public class ContractTextExtractionService {
     }
 
     private static String extractDocxText(byte[] content) throws IOException {
-        try (InputStream inputStream = new ByteArrayInputStream(content);
-             XWPFDocument document = new XWPFDocument(inputStream);
-             XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
-            return extractor.getText();
+        try {
+            try (InputStream inputStream = new ByteArrayInputStream(content);
+                 XWPFDocument document = new XWPFDocument(inputStream);
+                 XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
+                return extractor.getText();
+            }
+        } catch (LinkageError exception) {
+            LOG.warn("[AI审查] POI docx 提取不可用，改用内置 XML 提取：reason={}", exception.toString());
+            return extractDocxTextFromXml(content);
         }
+    }
+
+    private static String extractDocxTextFromXml(byte[] content) throws IOException {
+        try (ZipInputStream zipInputStream = new ZipInputStream(new ByteArrayInputStream(content))) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (!"word/document.xml".equals(entry.getName())) {
+                    continue;
+                }
+                String xml = new String(zipInputStream.readAllBytes(), StandardCharsets.UTF_8);
+                return unescapeXml(xml
+                        .replaceAll("<w:tab[^>]*/>", " ")
+                        .replaceAll("</w:p>", "\n")
+                        .replaceAll("<[^>]+>", ""));
+            }
+        }
+        return "";
+    }
+
+    private static String unescapeXml(String value) {
+        return value.replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&quot;", "\"")
+                .replace("&apos;", "'")
+                .replace("&amp;", "&");
     }
 
     private static String extractPdfText(byte[] content) throws IOException {

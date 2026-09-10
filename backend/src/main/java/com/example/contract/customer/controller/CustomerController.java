@@ -1,5 +1,6 @@
 package com.example.contract.customer.controller;
 
+import com.example.contract.auth.security.RequirePermission;
 import com.example.contract.common.ApiResponse;
 import com.example.contract.customer.dto.CreateCustomerRequest;
 import com.example.contract.customer.dto.UpdateCustomerRequest;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequirePermission("base:customer")
 @RestController
 @RequestMapping("/api/customers")
 public class CustomerController {

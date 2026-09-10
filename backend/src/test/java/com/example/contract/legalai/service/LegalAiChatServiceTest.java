@@ -33,16 +33,16 @@ class LegalAiChatServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void configuredAppIdCanUseFixedLegalChatAgent() {
+    void configuredAppIdUsesInjectedValue() {
         LegalAiChatService service = new LegalAiChatService(
                 objectMapper,
                 HttpClient.newHttpClient(),
                 "https://dashscope.aliyuncs.com/api/v1/apps",
                 "key",
-                "84a6acc6f6134090b9b21e488c3792f1",
+                "legal-chat-app",
                 Duration.ofSeconds(5));
 
-        assertEquals("84a6acc6f6134090b9b21e488c3792f1", service.configuredAppId());
+        assertEquals("legal-chat-app", service.configuredAppId());
     }
 
     @Test

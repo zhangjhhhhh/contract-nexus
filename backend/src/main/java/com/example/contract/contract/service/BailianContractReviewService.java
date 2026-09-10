@@ -141,6 +141,19 @@ public class BailianContractReviewService {
         return enabled && !apiKey.isBlank() && !appId.isBlank() && !endpoint.isBlank();
     }
 
+    public ConfigurationStatus configurationStatus() {
+        return new ConfigurationStatus(
+                enabled,
+                !endpoint.isBlank(),
+                !appId.isBlank(),
+                !apiKey.isBlank(),
+                safeUrl(endpoint));
+    }
+
+    public List<ContractTextExtractionService.AttachmentText> extractTextsForDiagnostics(Contract contract) {
+        return textExtractionService.extractReviewTexts(contract);
+    }
+
     String configuredAppId() {
         return appId;
     }
@@ -160,7 +173,41 @@ public class BailianContractReviewService {
                 请基于下方已经从合同附件中提取出的文字内容审查合同。
                 附件原文件不会上传给模型；下方【合同文件文字内容】是本次审查的核心依据。
                 页面表单字段仅作辅助识别信息，若与文件文字内容冲突，以文件文字内容为准。
-                请严格返回智能体提示词要求的 JSON。
+                请输出一个合法的 JSON 对象作为审查结果，不要输出任何解释文字或代码块标记（不要用 ```json 包裹）。
+                字段名必须与下面完全一致：
+
+                {
+                  "contract_summary": {
+                    "contract_title": "合同标题或名称",
+                    "contract_type": "合同性质或类型",
+                    "party_a": "甲方",
+                    "party_b": "乙方",
+                    "subject_matter": "合同标的",
+                    "total_amount": "合同总金额",
+                    "payment_terms": "付款条款摘要",
+                    "performance_period": "履行期限",
+                    "effective_date": "生效日期",
+                    "termination_date": "终止日期",
+                    "dispute_resolution": "争议解决方式"
+                  },
+                  "risk_alerts": [
+                    {
+                      "risk_id": "风险编号，如 R1、R2",
+                      "risk_level": "高 或 中 或 低",
+                      "risk_category": "风险类别",
+                      "clause_reference": "对应的合同条款或位置",
+                      "risk_description": "风险的具体描述",
+                      "suggestion": "可执行的修改建议"
+                    }
+                  ],
+                  "overall_assessment": {
+                    "overall_risk_level": "高 或 中 或 低",
+                    "missing_clauses": ["缺失的必备条款"],
+                    "summary": "整体评价与结论"
+                  }
+                }
+
+                要求：合同未约定或信息缺失的字段填「未约定」或「无」，不要留空；risk_alerts 列出 2~5 条主要风险点；risk_level 与 overall_risk_level 只能取「高」「中」「低」；只输出 JSON 本体。
 
                 合同名称：%s
                 合同编号：%s
@@ -302,5 +349,14 @@ public class BailianContractReviewService {
                 .filter(text -> text != null)
                 .mapToInt(String::length)
                 .sum();
+    }
+
+    public record ConfigurationStatus(
+            boolean enabled,
+            boolean endpointConfigured,
+            boolean reviewAppIdConfigured,
+            boolean apiKeyConfigured,
+            String endpoint
+    ) {
     }
 }

@@ -43,6 +43,10 @@ export async function fetchContract(contractId: string) {
   return request<Contract>(`/contracts/${contractId}`);
 }
 
+export async function retryAiReview(contractId: string) {
+  return request<Contract>(`/contracts/${contractId}/ai-review/retry`, { method: "POST" });
+}
+
 export async function fetchContractProcesses(contractId: string) {
   return request<ContractProcess[]>(`/contracts/${contractId}/processes`);
 }

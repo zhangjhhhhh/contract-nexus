@@ -1,6 +1,8 @@
 package com.example.contract.contract.controller;
 
+import com.example.contract.auth.security.RequirePermission;
 import com.example.contract.common.ApiResponse;
+import com.example.contract.contract.dto.AiReviewDiagnostics;
 import com.example.contract.contract.dto.ApproveContractRequest;
 import com.example.contract.contract.dto.AssignContractRequest;
 import com.example.contract.contract.dto.CountersignRequest;
@@ -37,6 +39,7 @@ public class ContractController {
         this.contractService = contractService;
     }
 
+    @RequirePermission("query:info")
     @GetMapping
     public ApiResponse<PageResponse<Contract>> list(
             @RequestParam(required = false) String keyword,
@@ -48,32 +51,50 @@ public class ContractController {
         return ApiResponse.success(contractService.list(keyword, status, beginDate, endDate, page, pageSize));
     }
 
+    @RequirePermission("query:info")
     @GetMapping("/{id}")
     public ApiResponse<Contract> detail(@PathVariable String id) {
         return ApiResponse.success(contractService.detail(id));
     }
 
+    @RequirePermission("query:info")
+    @GetMapping("/{id}/ai-review/diagnostics")
+    public ApiResponse<AiReviewDiagnostics> aiReviewDiagnostics(@PathVariable("id") String id) {
+        return ApiResponse.success(contractService.aiReviewDiagnostics(id));
+    }
+
+    @RequirePermission("contract:draft")
+    @PostMapping("/{id}/ai-review/retry")
+    public ApiResponse<Contract> retryAiReview(@PathVariable("id") String id) {
+        return ApiResponse.success(contractService.retryAiReview(id));
+    }
+
+    @RequirePermission("contract:draft")
     @PostMapping
     public ApiResponse<Contract> draft(@Valid @RequestBody DraftContractRequest request) {
         return ApiResponse.success(contractService.draft(request));
     }
 
+    @RequirePermission("contract:draft")
     @PutMapping("/{id}")
     public ApiResponse<Contract> update(@PathVariable String id, @Valid @RequestBody UpdateContractRequest request) {
         return ApiResponse.success(contractService.update(id, request));
     }
 
+    @RequirePermission("contract:draft")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable String id) {
         contractService.delete(id);
         return ApiResponse.success();
     }
 
+    @RequirePermission("system:assign")
     @PostMapping("/{id}/assign")
     public ApiResponse<Contract> assign(@PathVariable String id, @Valid @RequestBody AssignContractRequest request) {
         return ApiResponse.success(contractService.assign(id, request));
     }
 
+    @RequirePermission("contract:draft")
     @PostMapping("/{id}/retract")
     public ApiResponse<Contract> retract(@PathVariable String id, @RequestBody java.util.Map<String, String> body) {
         String userId = body.get("userId");
@@ -83,36 +104,43 @@ public class ContractController {
         return ApiResponse.success(contractService.retract(id, userId));
     }
 
+    @RequirePermission("contract:countersign")
     @PostMapping("/{id}/countersign")
     public ApiResponse<Contract> countersign(@PathVariable String id, @Valid @RequestBody CountersignRequest request) {
         return ApiResponse.success(contractService.countersign(id, request));
     }
 
+    @RequirePermission("contract:finalize")
     @PostMapping("/{id}/finalize")
     public ApiResponse<Contract> finalizeContract(@PathVariable String id, @Valid @RequestBody FinalizeContractRequest request) {
         return ApiResponse.success(contractService.finalizeContract(id, request));
     }
 
+    @RequirePermission("contract:approve")
     @PostMapping("/{id}/approve")
     public ApiResponse<Contract> approve(@PathVariable String id, @Valid @RequestBody ApproveContractRequest request) {
         return ApiResponse.success(contractService.approve(id, request));
     }
 
+    @RequirePermission("contract:sign")
     @PostMapping("/{id}/sign")
     public ApiResponse<Contract> sign(@PathVariable String id, @Valid @RequestBody SignContractRequest request) {
         return ApiResponse.success(contractService.sign(id, request));
     }
 
+    @RequirePermission("query:process")
     @GetMapping("/{id}/processes")
     public ApiResponse<List<ContractProcess>> processes(@PathVariable String id) {
         return ApiResponse.success(contractService.processes(id));
     }
 
+    @RequirePermission("query:process")
     @GetMapping("/{id}/sign-records")
     public ApiResponse<List<SignRecord>> signRecords(@PathVariable String id) {
         return ApiResponse.success(contractService.signRecords(id));
     }
 
+    @RequirePermission("query:info")
     @GetMapping("/{id}/versions")
     public ApiResponse<List<ContractVersion>> versions(@PathVariable String id) {
         return ApiResponse.success(contractService.versions(id));

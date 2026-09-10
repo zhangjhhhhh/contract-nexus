@@ -27,7 +27,7 @@ GET http://127.0.0.1:8080/api/health
 后端启动前会自动读取 `.env`。推荐复制示例文件后，把本机数据库和百炼配置写入 `backend/.env`：
 
 ```powershell
-cd "C:\Users\asus\Desktop\files\Coding\Web\contract_management_system\backend"
+cd backend
 Copy-Item .env.example .env
 ```
 
@@ -38,9 +38,19 @@ Copy-Item .env.example .env
 默认启用 `db` profile，需要在 `backend/.env` 中提供：
 
 ```text
+DB_URL=jdbc:mysql://localhost:3306/contract_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
 DB_USERNAME=your_database_username
 DB_PASSWORD=your_database_password
 ```
+
+首次初始化数据库（建库建表 + 初始账号）：
+
+```powershell
+mysql -u root -p < schema.sql
+mysql -u root -p < seed.sql
+```
+
+> `schema.sql` 会创建 `contract_system` 库和全部表；`seed.sql` 写入 admin/operator/newuser 三个初始账号（密码见文件顶部注释）。重新执行 `schema.sql` 会清空并重建所有表。
 
 临时使用内存仓库：
 
@@ -58,11 +68,13 @@ mvn spring-boot:run
 ```text
 DASHSCOPE_API_KEY=your_dashscope_api_key
 BAILIAN_REVIEW_APP_ID=your_review_agent_app_id
+BAILIAN_LEGAL_CHAT_APP_ID=your_legal_chat_agent_app_id
 BAILIAN_APP_ID=your_legacy_default_app_id
 AI_REVIEW_ENABLED=true
+AI_REVIEW_TIMEOUT_SECONDS=120
 ```
 
-`BAILIAN_REVIEW_APP_ID` 用于 AI 审查智能体；“四海”聊天智能体固定使用应用 ID `84a6acc6f6134090b9b21e488c3792f1`。旧配置 `BAILIAN_APP_ID` 仍保留为兼容默认值。
+`BAILIAN_REVIEW_APP_ID` 用于 AI 审查智能体，`BAILIAN_LEGAL_CHAT_APP_ID` 用于“四海”法律顾问聊天智能体。旧配置 `BAILIAN_APP_ID` 仍保留为兼容默认值。
 
 Windows PowerShell 默认控制台编码通常是 GBK/936，后端默认按 `GBK` 输出控制台日志，避免 `[AI瀹℃煡]` 这类乱码：
 
@@ -83,10 +95,16 @@ $env:LOGGING_CHARSET_CONSOLE="UTF-8"
 $env:AI_REVIEW_MAX_TEXT_CHARS="120000"
 ```
 
+如果审查智能体返回较慢，可调大超时时间，默认 `120` 秒：
+
+```powershell
+$env:AI_REVIEW_TIMEOUT_SECONDS="120"
+```
+
 完整临时启动示例：
 
 ```powershell
-cd "C:\Users\asus\Desktop\files\Coding\Web\contract_management_system\backend"
+cd backend
 mvn.cmd spring-boot:run
 ```
 
